@@ -26,9 +26,11 @@ class ResearchTool:
                 revenue_cagr=KPICalculator.revenue_cagr(fin),
                 debt_to_equity=KPICalculator.debt_to_equity(fin),
             )
+            company_name = fin.info.get("longName") or fin.info.get("shortName") or t
             self.stocks.append(
                 Stock(
                     ticker=t,
+                    name=company_name,
                     sector=fin.info.get("sector", "Unknown"),
                     kpis=kpis,
                 )
@@ -49,6 +51,7 @@ class ResearchTool:
             rows.append(
                 {
                     "ticker": s.ticker,
+                    "name": s.name or "",
                     "sector": s.sector,
                     "score": round(s.score, 4),
                     "roic": s.kpis.roic,

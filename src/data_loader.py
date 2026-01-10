@@ -1,3 +1,4 @@
+from io import StringIO
 import yfinance as yf
 import pandas as pd
 from typing import List
@@ -78,20 +79,32 @@ class YahooFinanceLoader:
         YahooFinanceLoader._last_cached_timestamp = cached_timestamp
         YahooFinanceLoader._last_cached_data = cached_data
 
-        # Get S&P 500 list from Wikipedia
+        # Get S&P 500 list from Wikipedia (fetch via requests with a timeout, then parse locally)
         try:
-            tables = pd.read_html(
-                "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-            )
-            df = tables[0]
-            tickers = df["Symbol"].astype(str).tolist()
+            url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+            headers = {
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"
+            }
+            resp = requests.get(url, timeout=10, headers=headers)
+            resp.raise_for_status()
+
+            # Prefer pandas fast parsing; if it fails (e.g. missing parser),
+            # fall back to cached data if available instead of attempting
+            # fragile regex parsing on the live HTML.
+            try:
+                tables = pd.read_html(resp.text)
+                df = tables[0]
+                tickers = df["Symbol"].astype(str).tolist()
+            except Exception:
+                # If pandas can't parse the HTML and we have a cache, use it
+                if cached_data:
+                    tickers = list(cached_data.keys())
+                else:
+                    # propagate to trigger the existing fallback logic below
+                    raise
         except Exception:
             # Try a lightweight fallback using requests + regex to extract the 'Symbol' column
             try:
-                import requests
-                import re
-                from io import StringIO
-
                 url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
                 headers = {
                     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"

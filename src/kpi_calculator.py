@@ -7,8 +7,30 @@ class KPICalculator:
     @staticmethod
     def roic(fin: Financials) -> Optional[float]:
         try:
-            ebit = fin.income.loc["Ebit"].iloc[0]
+            income = fin.income
             tax_rate = fin.info.get("taxRate", 0.21)
+
+            # Try common labels for EBIT/operating profit
+            ebit = None
+            for key in ["Ebit", "EBIT", "Operating Income", "OperatingIncome"]:
+                if key in income.index:
+                    ebit = income.loc[key].iloc[0]
+                    break
+
+            # Fallback: compute EBIT from Net Income and Interest Expense if available
+            if ebit is None:
+                if "Net Income" in income.index:
+                    net_income = income.loc["Net Income"].iloc[0]
+                    interest = (
+                        income.loc["Interest Expense"].iloc[0]
+                        if "Interest Expense" in income.index
+                        else 0.0
+                    )
+                    # Net Income = (EBIT - Interest) * (1 - tax_rate)
+                    ebit = net_income / (1 - tax_rate) + interest
+                else:
+                    raise KeyError("EBIT not found in income statement")
+
             nopat = ebit * (1 - tax_rate)
             debt = fin.balance.loc["Long Term Debt"].iloc[0]
             equity = fin.balance.loc["Stockholders Equity"].iloc[0]
