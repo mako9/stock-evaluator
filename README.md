@@ -54,6 +54,7 @@ This project provides a CSV export of the ranked stocks and a simple backtest su
 
 ### CSV fields (via `ResearchTool.export_csv(path)`) ✅
 - **ticker** — Stock ticker symbol (e.g., `AAPL`).
+- **name** — Official company name (from data provider, e.g., `Apple Inc.`).
 - **sector** — The sector string pulled from the data provider (used for per-sector scoring).
 - **score** — Composite score (rounded to 4 decimals) produced by `ScoringEngine`. Higher is better. It is a weighted sum of KPI percentiles computed within each sector; scores are typically in the range **0.0–1.0** (weights sum to 1.0).
 - **roic** — Return on Invested Capital (ratio). Example: `0.12` means 12% ROIC.

@@ -207,4 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 # generated files
-investment_research.csv
+*.csv
+*.xlsx
+*.xls

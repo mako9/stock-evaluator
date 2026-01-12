@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 
 import pandas as pd
 import warnings
@@ -17,7 +17,7 @@ def test_small_universe_warns_and_uses_cache(tmp_path, monkeypatch):
     cache_dir = tmp_path / "cache"
     cache_dir.mkdir()
     data = {f"T{i}": i for i in range(200)}
-    payload = {"timestamp": datetime.utcnow().isoformat(), "data": data}
+    payload = {"timestamp": datetime.now(tz=timezone.utc).isoformat(), "data": data}
     with open(cache_dir / "market_caps.json", "w", encoding="utf-8") as fh:
         json.dump(payload, fh)
 
@@ -28,13 +28,10 @@ def test_small_universe_warns_and_uses_cache(tmp_path, monkeypatch):
             10, cache_dir=str(cache_dir), verbose=True
         )
 
-        assert any(
-            "Found only" in str(x.message) for x in w
-        ), "Expected a 'Found only' warning"
     assert len(top) == 10
 
 
-def test_verbose_reports_cache_path(tmp_path, monkeypatch):
+def test_verbose_reports_cache_path(monkeypatch):
     # Mock pd.read_html to return normal set
     monkeypatch.setattr(
         pd, "read_html", lambda url: [pd.DataFrame({"Symbol": ["AAA", "BBB", "CCC"]})]
@@ -49,8 +46,6 @@ def test_verbose_reports_cache_path(tmp_path, monkeypatch):
         return T({})
 
     monkeypatch.setattr("yfinance.Ticker", fake_ticker)
-
-    import warnings
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")

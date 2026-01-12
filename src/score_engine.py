@@ -1,6 +1,8 @@
 from collections import defaultdict
 from typing import List
 from scipy.stats import percentileofscore
+import math
+import warnings
 
 from src.models.stock import Stock
 
@@ -19,8 +21,6 @@ class ScoringEngine:
 
     @staticmethod
     def score(stocks: List[Stock]) -> None:
-        import warnings
-
         # Reset scores before computing to avoid accumulation across runs
         for s in stocks:
             s.score = 0.0
@@ -32,10 +32,13 @@ class ScoringEngine:
 
         for kpi, weight in ScoringEngine.KPI_WEIGHTS.items():
             for sector, sector_stocks in grouped.items():
+                # Exclude None/NaN/inf values from percentile calculations
                 values = [
-                    getattr(s.kpis, kpi)
-                    for s in sector_stocks
-                    if getattr(s.kpis, kpi) is not None
+                    v
+                    for v in (getattr(s.kpis, kpi) for s in sector_stocks)
+                    if v is not None
+                    and isinstance(v, (int, float))
+                    and math.isfinite(v)
                 ]
 
                 if not values:
@@ -43,16 +46,24 @@ class ScoringEngine:
 
                 for s in sector_stocks:
                     value = getattr(s.kpis, kpi)
-                    if value is None:
+                    if (
+                        value is None
+                        or not isinstance(value, (int, float))
+                        or not math.isfinite(value)
+                    ):
                         continue
 
                     pct = percentileofscore(values, value) / 100
                     if kpi in ScoringEngine.INVERSE_KPIS:
                         pct = 1 - pct
 
+                    # Guard against NaN propagation
+                    if not math.isfinite(pct):
+                        continue
+
                     s.score += pct * weight
 
-        # After scoring, warn about stocks with many missing KPI values
+        # After scoring, warn about stocks with many missing KPI values and ensure finite scores
         for s in stocks:
             missing = sum(
                 1 for k in ScoringEngine.KPI_WEIGHTS if getattr(s.kpis, k) is None
@@ -61,3 +72,6 @@ class ScoringEngine:
                 warnings.warn(
                     f"Stock {s.ticker} has {missing} missing KPI(s); score may be unreliable."
                 )
+
+            if not math.isfinite(s.score):
+                s.score = 0.0
