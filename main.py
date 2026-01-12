@@ -11,7 +11,7 @@ if __name__ == "__main__":
     tool = ResearchTool(universe)
     tool.load()
     tool.evaluate()
-    tool.export_csv("investment_research.csv")
+    tool.export_xlsx("investment_research.xlsx")
 
     for s in tool.ranking():
         print(f"{s.ticker}: {round(s.score, 3)}")

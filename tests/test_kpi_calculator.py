@@ -62,3 +62,31 @@ def test_roic_missing_returns_none():
 
     r = KPICalculator.roic(fin)
     assert r is None
+
+
+def test_roic_zero_invested_returns_none():
+    income = pd.DataFrame({"2020": [100]}, index=["Ebit"])
+    balance = pd.DataFrame(
+        {"2020": [0, 0]}, index=["Long Term Debt", "Stockholders Equity"]
+    )
+    fin = make_financials(income, balance)
+
+    r = KPICalculator.roic(fin)
+    assert r is None
+
+
+def test_roe_zero_or_tiny_equity_returns_none():
+    income = pd.DataFrame({"2020": [10]}, index=["Net Income"])
+    balance = pd.DataFrame({"2020": [0]}, index=["Stockholders Equity"])
+    fin = make_financials(income, balance)
+    assert KPICalculator.roe(fin) is None
+
+    balance = pd.DataFrame({"2020": [1e-9]}, index=["Stockholders Equity"])
+    fin = make_financials(income, balance)
+    assert KPICalculator.roe(fin) is None
+
+
+def test_fcf_yield_handles_zero_market_cap():
+    cash = pd.DataFrame({"2020": [100]}, index=["Free Cash Flow"])
+    fin = make_financials({}, {}, cashflow_dict={"2020": [100]}, info={"marketCap": 0})
+    assert KPICalculator.fcf_yield(fin) is None

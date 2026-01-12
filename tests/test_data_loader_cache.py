@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
@@ -13,7 +13,7 @@ class DummyTicker:
 
 def make_cache(path, data, timestamp=None):
     if timestamp is None:
-        timestamp = datetime.utcnow().isoformat()
+        timestamp = datetime.now(timezone.utc).isoformat()
     payload = {"timestamp": timestamp, "data": data}
     with open(path / "market_caps.json", "w", encoding="utf-8") as fh:
         json.dump(payload, fh)
@@ -46,7 +46,7 @@ def test_refreshes_cache_when_expired(tmp_path, monkeypatch):
     # Prepare a cache with old timestamp
     cache_dir = tmp_path / "cache"
     cache_dir.mkdir()
-    old_ts = (datetime.utcnow() - timedelta(days=10)).isoformat()
+    old_ts = (datetime.now(timezone.utc) - timedelta(days=10)).isoformat()
     data = {"AAA": 100, "BBB": 50, "CCC": 200}
     make_cache(cache_dir, data, timestamp=old_ts)
 

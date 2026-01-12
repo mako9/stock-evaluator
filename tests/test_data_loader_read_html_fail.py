@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -8,7 +8,7 @@ import requests
 
 
 def make_cache(path, data):
-    payload = {"timestamp": datetime.utcnow().isoformat(), "data": data}
+    payload = {"timestamp": datetime.now(timezone.utc).isoformat(), "data": data}
     with open(path / "market_caps.json", "w", encoding="utf-8") as fh:
         json.dump(payload, fh)
 
